@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raqeem Stark | Minimalist Analytics Dashboard</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons & Chart.js -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-body: #07090e;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-card-hover: rgba(31, 41, 55, 0.8);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(6, 182, 212, 0.3);
+            
+            --accent-cyan: #06b6d4;
+            --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+            --accent-violet: #8b5cf6;
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Tajawal', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* App Container Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: rgba(11, 15, 23, 0.8);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+            transition: var(--transition);
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            margin-bottom: 2.5rem;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            box-shadow: 0 0 20px var(--accent-cyan-glow);
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .nav-item a:hover, .nav-item.active a {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active a {
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), transparent);
+            border-right: 3px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .nav-item i {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Main Content Layout */
+        .main-wrapper {
+            margin-right: 260px;
+            flex: 1;
+            padding: 2rem;
+            max-width: 1600px;
+        }
+
+        /* Header Navigation */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1.5rem;
+        }
+
+        .search-bar {
+            position: relative;
+            flex: 1;
+            max-width: 420px;
+        }
+
+        .search-bar i {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            width: 18px;
+            height: 18px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.75rem 2.8rem 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-bar input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--accent-cyan-glow);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--accent-emerald);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-emerald);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-emerald);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .icon-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .icon-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+
+        .notification-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--accent-cyan);
+        }
+
+        .profile-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        /* Glassmorphism Panel Base */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent-cyan)), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            background: var(--bg-card-hover);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-title {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .metric-icon-wrapper {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-body {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .trend-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .trend-badge.positive {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--accent-emerald);
+        }
+
+        .trend-badge.negative {
+            background: rgba(244, 63, 94, 0.12);
+            color: var(--accent-rose);
+        }
+
+        /* Charts Layout Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title-group h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .chart-title-group p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .time-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .time-btn:hover, .time-btn.active {
+            background: var(--accent-cyan);
+            color: #000;
+            border-color: var(--accent-cyan);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+        }
+
+        /* Table Section */
+        .table-section {
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1.1rem 1rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-primary);
+        }
+
+        .client-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .client-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            border: 1px solid var(--border-color);
+        }
+
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-tag.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-tag.in-progress {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .status-tag.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(100%);
+            }
+            .main-wrapper {
+                margin-right: 0;
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <a href="#" class="brand-logo">
+                <div class="brand-icon">
+                    <i data-lucide="zap"></i>
+                </div>
+                <span>Raqeem Stark</span>
+            </a>
+
+            <div class="nav-section">
+                <div class="nav-title">الرئيسية</div>
+                <ul class="nav-list">
+                    <li class="nav-item active">
+                        <a href="#"><i data-lucide="layout-dashboard"></i> لوحة التحكم</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#"><i data-lucide="line-chart"></i> التحليلات المتقدمة</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#"><i data-lucide="wallet"></i> المعاملات المالية</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">الإدارة</div>
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#"><i data-lucide="users"></i> العملاء والشركاء</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#"><i data-lucide="folder-kanban"></i> المشاريع الحالية</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#"><i data-lucide="settings"></i> إعدادات النظام</a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper Container -->
+        <main class="main-wrapper">
+            <!-- Header Section -->
+            <header class="header">
+                <div class="search-bar">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="ابحث عن تقارير، عملاء، أو عمليات...">
+                </div>
+
+                <div class="header-actions">
+                    <div class="status-badge">
+                        <span class="status-dot"></span>
+                        النظام نشط
+                    </div>
+
+                    <button class="icon-btn" aria-label="الإشعارات">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-indicator"></span>
+                    </button>
+
+                    <div class="profile-avatar" title="Raqeem Stark Admin">
+                        RS
+                    </div>
+                </div>
+            </header>
+
+            <!-- Metric KPI Summary Cards -->
+            <section class="metrics-grid">
+                <!-- Card 1: Revenue -->
+                <div class="glass-panel metric-card" style="--card-accent: var(--accent-cyan);">
+                    <div class="metric-header">
+                        <span class="metric-title">إجمالي الأرباح</span>
+                        <div class="metric-icon-wrapper" style="color: var(--accent-cyan);">
+                            <i data-lucide="dollar-sign"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <div class="metric-value">$24,850</div>
+                        <div class="trend-badge positive">
+                            <i data-lucide="arrow-up-right"></i>
+                            14.2%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Clients -->
+                <div class="glass-panel metric-card" style="--card-accent: var(--accent-violet);">
+                    <div class="metric-header">
+                        <span class="metric-title">العملاء النشطون</span>
+                        <div class="metric-icon-wrapper" style="color: var(--accent-violet);">
+                            <i data-lucide="users"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <div class="metric-value">1,240</div>
+                        <div class="trend-badge positive">
+                            <i data-lucide="arrow-up-right"></i>
+                            8.5%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Conversion Rate -->
+                <div class="glass-panel metric-card" style="--card-accent: var(--accent-emerald);">
+                    <div class="metric-header">
+                        <span class="metric-title">معدل التحويل</span>
+                        <div class="metric-icon-wrapper" style="color: var(--accent-emerald);">
+                            <i data-lucide="activity"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <div class="metric-value">3.8%</div>
+                        <div class="trend-badge positive">
+                            <i data-lucide="arrow-up-right"></i>
+                            1.2%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Monthly Orders -->
+                <div class="glass-panel metric-card" style="--card-accent: var(--accent-rose);">
+                    <div class="metric-header">
+                        <span class="metric-title">طلبات الشهر</span>
+                        <div class="metric-icon-wrapper" style="color: var(--accent-rose);">
+                            <i data-lucide="shopping-bag"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <div class="metric-value">892</div>
+                        <div class="trend-badge negative">
+                            <i data-lucide="arrow-down-right"></i>
+                            2.1%
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-grid">
+                <!-- Main Area Chart -->
+                <div class="glass-panel">
+                    <div class="chart-header">
+                        <div class="chart-title-group">
+                            <h3>مؤشرات النمو والأرباح</h3>
+                            <p>مقارنة الإيرادات بالمبيعات الفعلية خلال الأشهر الأخيرة</p>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="time-btn">أسبوعي</button>
+                            <button class="time-btn active">شهري</button>
+                            <button class="time-btn">سنوي</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Secondary Doughnut Chart -->
+                <div class="glass-panel">
+                    <div class="chart-header">
+                        <div class="chart-title-group">
+                            <h3>مصادر الزيارات</h3>
+                            <p>توزيع الأجهزة المستخدمة</p>
+                        </div>
+                        <button class="icon-btn" aria-label="خيارات الإحصاء">
+                            <i data-lucide="more-vertical"></i>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="deviceChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Table Section -->
+            <section class="glass-panel table-section">
+                <div class="table-header">
+                    <div class="chart-title-group">
+                        <h3>أحدث المشاريع والعمليات</h3>
+                        <p>متابعة حالة العقود والمدفوعات الأخيرة</p>
+                    </div>
+                    <button class="time-btn">عرض الكل</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم العميل / الشركة</th>
+                                <th>نوع المشروع</th>
+                                <th>التاريخ</th>
+                                <th>القيمة</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="client-cell">
+                                        <div class="client-avatar">NE</div>
+                                        <span>شركة النجم المبتكر</span>
+                                    </div>
+                                </td>
+                                <td>تطوير منصة سحابية</td>
+                                <td>24 أكتوبر 2026</td>
+                                <td>$8,500</td>
+                                <td><span class="status-tag completed"><i data-lucide="check-circle-2" style="width:12px"></i> مكتمل</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="client-cell">
+                                        <div class="client-avatar">ST</div>
+                                        <span>حلول ستاك للتكنولوجيا</span>
+                                    </div>
+                                </td>
+                                <td>تصميم لوحة تحكم UI/UX</td>
+                                <td>22 أكتوبر 2026</td>
+                                <td>$4,200</td>
+                                <td><span class="status-tag in-progress"><i data-lucide="clock" style="width:12px"></i> قيد التنفيذ</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="client-cell">
+                                        <div class="client-avatar">AP</div>
+                                        <span>مجموعة الأفق العقارية</span>
+                                    </div>
+                                </td>
+                                <td>تطبيق الهواتف الذكية</td>
+                                <td>18 أكتوبر 2026</td>
+                                <td>$12,000</td>
+                                <td><span class="status-tag pending"><i data-lucide="alert-circle" style="width:12px"></i> معلق</span></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="client-cell">
+                                        <div class="client-avatar">BR</div>
+                                        <span>براندفاي للدعاية</span>
+                                    </div>
+                                </td>
+                                <td>تحسين محركات البحث SEO</td>
+                                0.15 أكتوبر 2026<td>
+                                <td>$1,800</td>
+                                <td><span class="status-tag completed"><i data-lucide="check-circle-2" style="width:12px"></i> مكتمل</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Global Chart Defaults
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = "'Plus Jakarta Sans', 'Tajawal', sans-serif";
+
+        // Main Dual Area Chart Setup
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        
+        // Gradients
+        const gradientCyan = ctxRevenue.createLinearGradient(0, 0, 0, 300);
+        gradientCyan.addColorStop(0, 'rgba(6, 182, 212, 0.35)');
+        gradientCyan.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
+        const gradientViolet = ctxRevenue.createLinearGradient(0, 0, 0, 300);
+        gradientViolet.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
+        gradientViolet.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+        new Chart(ctxRevenue, {
+            type: 'line',
+            data: {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو'],
+                datasets: [
+                    {
+                        label: 'الإيرادات ($)',
+                        data: [12000, 19000, 15000, 24000, 22000, 30000, 28000],
+                        borderColor: '#06b6d4',
+                        borderWidth: 3,
+                        backgroundColor: gradientCyan,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#06b6d4',
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'المبيعات الفردية',
+                        data: [8000, 11000, 9500, 15000, 14000, 18000, 20000],
+                        borderColor: '#8b5cf6',
+                        borderWidth: 2,
+                        borderDash: [4, 4],
+                        backgroundColor: gradientViolet,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#8b5cf6'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                        border: { dash: [5, 5] }
+                    }
+                }
+            }
+        });
+
+        // Device Doughnut Chart Setup
+        const ctxDevice = document.getElementById('deviceChart').getContext('2d');
+        new Chart(ctxDevice, {
+            type: 'doughnut',
+            data: {
+                labels: ['الهواتف', 'أجهزة أسطح المكتب', 'الأجهزة اللوحية'],
+                datasets: [{
+                    data: [58, 34, 8],
+                    backgroundColor: [
+                        '#06b6d4',
+                        '#8b5cf6',
+                        '#10b981'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 18,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
